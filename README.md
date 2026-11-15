@@ -1,153 +1,147 @@
-# pitiupi
+# Pitiupi — Plugin Batalha Naval P2P
 
-Ferramenta **P2P** para práticas de Redes de Computadores: núcleo em Java com arquitetura de **plugins** (conversa na rede e compartilhamento de tela).
+Implementação de um plugin de **Batalha Naval em rede ponto-a-ponto (P2P)** desenvolvido como Trabalho Prático da disciplina de **Redes de Computadores** (UFSJ), integrado à arquitetura extensível do **Pitiupi**.
 
-**Documentação:** [docs/README.md](docs/README.md) · **Quickstart:** [docs/comecar.md](docs/comecar.md)
+* **Autor do Plugin:** Rafael Dayvid
 
----
+* **Repositório:** [rafael-dayvid/Piutiupi---TP-Flavio](https://github.com/rafael-dayvid/Piutiupi---TP-Flavio)
 
-## Como rodar
+* **Projeto Base:** [GabrielFSSantos/pitiupi](https://github.com/GabrielFSSantos/pitiupi)
 
-O comando compila o núcleo, os plugins do [catálogo](plugins.registry.json) e abre a janela. Plugins, cache e logs ficam em **`.pitiupi/`** dentro da pasta do projeto.
+## Sumário
 
-Depois que a janela abrir: informe **nome** e **porta** (na sala, em geral `5000`). Os dois colegas usam a mesma porta. Abra os plugins na aba **Plugins**.
+1. [Visão Geral e Arquitetura de Redes](#visão-geral-e-arquitetura-de-redes)
 
-### Linux (Ubuntu instalado na máquina)
+2. [Pré-requisitos](#pré-requisitos)
 
-Abra o terminal, entre na pasta do projeto e rode:
+3. [Como Compilar e Executar](#como-compilar-e-executar)
 
-```bash
-sudo apt install openjdk-21-jdk ant python3
-chmod +x scripts/pitiupi.sh
-./scripts/pitiupi.sh run --all
-```
+4. [Como Jogar](#como-jogar)
 
-A janela é a do Java do Linux. Cabo e Wi-Fi são as placas deste computador.
+5. [Estrutura do Plugin](#estrutura-do-plugin)
 
-### Windows
+## Visão Geral e Arquitetura de Redes
 
-Abra o **Prompt de Comando**: tecla Windows, digite `cmd` e pressione Enter. Entre na pasta em que o projeto foi baixado e rode:
+O **Pitiupi** possui um núcleo em Java responsável pela descoberta de nós na rede local (presença via UDP) e pelo roteamento de mensagens, enquanto as funcionalidades são carregadas dinamicamente como módulos independentes (`.jar`).
 
-```bat
-cd %USERPROFILE%\Downloads\pitiupi
-scripts\pitiupi.cmd run --all
-```
+O plugin **Batalha Naval P2P** explora os seguintes conceitos de Redes de Computadores:
 
-Se a pasta for outra, troque o `cd`. No PowerShell o comando é o mesmo: `scripts\pitiupi.cmd run --all`.
+* **Carregamento Dinâmico via Java SPI (*Service Provider Interface*):** O núcleo descobre o módulo em tempo de execução por meio do descritor `META-INF/services/pitiupi.models.Plugin`, instanciando `BatalhaNavalPlugin` em um *classloader* isolado sem acoplamento direto no código principal.
 
-`java`, `javac` e `ant` precisam estar no PATH. No PowerShell, o JDK:
+* **Transporte Confiável (TCP):** Todas as mensagens do jogo (`BatalhaMessage`) são serializadas e despachadas pelo `MessageDispatcher` usando **`TransportMode.TCP`** e endereçamento direto (**`SendTarget.singlePeer(...)`**), garantindo entrega ordenada e sem perda de pacotes para cada jogada.
 
-```powershell
-winget install Microsoft.OpenJDK.17
-```
+* **Protocolo da Camada de Aplicação:** A sincronização entre os dois jogadores ocorre por meio de uma máquina de estados definida em `BatalhaMessage`:
 
-O Apache Ant é o zip de <https://ant.apache.org/bindownload.cgi>: extraia e acrescente a pasta `bin` ao PATH. Feche o cmd e abra de novo.
+  * `CONVITE` / `ACEITE` / `RECUSA`: Handshake inicial da partida entre desafiante e desafiado.
 
-A janela é a do Java do Windows. Cabo e Wi-Fi são as placas deste computador.
+  * `TIRO`: Envio das coordenadas `(linha, coluna)` do ataque realizado.
 
-### WSL
+  * `RESULTADO_TIRO`: Resposta automática do tabuleiro adversário informando água (`~`), acerto (`X`), embarcação afundada ou vitória.
 
-Abra o **Ubuntu** do WSL (não o cmd). Entre na pasta do projeto e use o comando do Linux:
+  * `ENCERRAR`: Notificação de desistência ou fechamento da aba do jogo.
 
-```bash
-sudo apt install openjdk-21-jdk ant python3
-chmod +x scripts/pitiupi.sh
-./scripts/pitiupi.sh run --all
-```
-
-Se o projeto foi baixado no Windows, por exemplo em Downloads:
-
-```bash
-cd /mnt/c/Users/SEU_USUARIO/Downloads/pitiupi
-chmod +x scripts/pitiupi.sh
-./scripts/pitiupi.sh run --all
-```
-
-A compilação usa o `javac` e o `ant` do Ubuntu. A janela abre no Windows, com as placas reais. O JDK 17 do Windows também precisa estar instalado (`winget install Microsoft.OpenJDK.17` no PowerShell).
-
-```bash
-./scripts/pitiupi.sh list      # ids, categorias, JAR buildado?
-./scripts/pitiupi.sh check     # ferramentas + catálogo
-```
-
----
-
-## Catálogo de plugins (`plugins.registry.json`)
-
-Novos módulos entram no repositório adicionando uma entrada no JSON (não é preciso editar o script):
-
-| Campo | Significado |
-| --- | --- |
-| `id` | Usado em `--plugins chat,meuJogo` |
-| `dir` | Pasta do módulo (ex.: `plugins/xadrez`) |
-| `build` | `ant`, `make` ou `jar` (arquivo já pronto, sem compilar) |
-| `jar` | Caminho do JAR relativo a `dir` |
-| `menuCategory` | `Social`, `Jogos` ou `Streaming` — filtro CLI e documentação |
-
-Plugins de referência hoje:
-
-| id | Uso didático | Pasta |
-| --- | --- | --- |
-| `chat` | Sala geral, peer por IP, TCP privado | `plugins/chat` |
-| `screencast` | Multicast ou unicast de tela | `plugins/screencast` |
-
-Na interface, o texto das abas vem de `getDisplayName()` em cada plugin. O campo `menuCategory` no JSON alinha build/link com a documentação.
-
-```bash
-./scripts/pitiupi.sh run --all
-./scripts/pitiupi.sh run --category Social
-./scripts/pitiupi.sh run --plugins chat,screencast
-./scripts/pitiupi.sh discover   # pastas em plugins/ com SPI ainda não no catálogo
-```
-
----
-
-## Novo plugin (resumo)
-
-1. Copiar a estrutura de `plugins/chat` para `plugins/meuPlugin` ([plugins](docs/plugins.md), [funções do núcleo](docs/nucleo-para-plugins.md)).
-2. Em `createPlugin`, registrar o painel com `bindShellWorkspaceContent` e, se fizer sentido, peer actions na lista lateral.
-3. Adicionar entrada em [`plugins.registry.json`](plugins.registry.json), ou instalar o JAR pela aba **Configurações** (a instalação grava o catálogo).
-4. `./scripts/pitiupi.sh link --all` e reiniciar o app.
-
-O núcleo carrega **todos os `*.jar`** em `PITIUPI_HOME/plugins`. Detalhes: [pitiupi/plugins/README.md](pitiupi/plugins/README.md).
-
----
+* **Monitoramento em Tempo Real:** A interface conta com um **Log de Protocolo da Aplicação** na parte inferior que exibe todos os pacotes transmitidos (`[TX TCP -> IP]`) e recebidos (`[RX TCP <- IP]`) durante a partida.
 
 ## Pré-requisitos
 
-| Onde | O que instalar |
-| --- | --- |
-| Linux e Ubuntu do WSL | `sudo apt install openjdk-21-jdk ant python3` |
-| Windows (e o Windows ao lado do WSL) | JDK 17 (`winget install Microsoft.OpenJDK.17`) e Apache Ant no PATH |
+### Linux (Ubuntu / Debian)
 
-Conferir no Linux ou no WSL: `./scripts/pitiupi.sh check`. Testes do núcleo: `cd pitiupi && ant test`.
+Instale o JDK, Apache Ant e Python 3 (usado pelos scripts de gerenciamento do catálogo):
 
----
+```
+sudo apt update
+sudo apt install openjdk-21-jdk ant python3
 
-## Comandos do script
+```
 
-| Comando | Ação |
-| --- | --- |
-| `run` | Build + link + app |
-| `build` | Build + link |
-| `link` | Só symlinks (JARs já existem) |
-| `list` | Catálogo e status do JAR |
-| `discover` | Sugestão de módulos com SPI |
-| `check` | PATH + JSON válido |
+### Windows
 
-Opções: `--all` (padrão), `--plugins ids`, `--category Social|Jogos|Streaming`.
+1. Instale o **JDK 17+** (`winget install Microsoft.OpenJDK.17`).
 
----
+2. Baixe o **Apache Ant**, extraia e adicione a pasta `bin` às variáveis de ambiente (`PATH`).
 
-## Teste em rede
+## Como Compilar e Executar
 
-- **Mesmo PC:** duas instâncias, portas distintas (ex. 5000 e 5001).
-- **Dois PCs na mesma Wi‑Fi:** mesma porta (ex. 5000), nomes diferentes. Cada um segue o caso da própria máquina em [Como rodar](#como-rodar). Linux abre o Java do Linux; Windows e WSL abrem o Java do Windows.
+Clone o repositório, entre na pasta do projeto e execute o script de build e inicialização:
 
-Ver [docs/usar.md](docs/usar.md) e [docs/rede.md](docs/rede.md).
+```
+git clone https://github.com/rafael-dayvid/Piutiupi---TP-Flavio.git
+cd Piutiupi---TP-Flavio
+chmod +x scripts/pitiupi.sh
+./scripts/pitiupi.sh run --all
 
----
+```
 
-## Origem
+*(No Windows, utilize `scripts\pitiupi.cmd run --all`).*
 
-Projeto base UFSJ (Redes). GitHub: [GabrielFSSantos/pitiupi](https://github.com/GabrielFSSantos/pitiupi).
+O script compila automaticamente o núcleo (`pitiupi`), o plugin `batalhanaval` (registrado na categoria `Jogos` em `plugins.registry.json`) e os demais plugins padrão, criando os vínculos em `.pitiupi/plugins/`.
+
+### Cenários de Teste
+
+* **Dois computadores na mesma rede local (Wi-Fi ou Cabo):**
+
+  * Execute `./scripts/pitiupi.sh run --all` em ambas as máquinas.
+
+  * Na tela inicial, informe **nomes diferentes** e a **mesma porta** (ex.: `5000`).
+
+* **Mesmo computador (dois terminais):**
+
+  * Abra dois terminais separados e rode `./scripts/pitiupi.sh run --all` em cada um.
+
+  * Informe **nomes diferentes** e **portas distintas** (ex.: `5000` na primeira janela e `5001` na segunda).
+
+## Como Jogar
+
+1. **Abrir o Plugin:** Na barra superior do Pitiupi, acesse a aba **Plugins** e selecione **Batalha Naval P2P** *(recomendado que ambos os jogadores abram a aba antes do início)*.
+
+2. **Organizar a Frota:** Ao abrir, o jogo posiciona aleatoriamente 5 embarcações no tabuleiro **Sua Frota (Defesa)**, totalizando **17 células**:
+
+   * Porta-Aviões (5 células)
+
+   * Encouraçado (4 células)
+
+   * Cruzador (3 células)
+
+   * Submarino (3 células)
+
+   * Destroyer (2 células)
+
+   * *Clique em **Sortear Frota** caso queira gerar uma nova disposição antes da partida começar.*
+
+3. **Desafiar um Adversário:** Na lista lateral esquerda de *peers* conectados, clique com o botão direito sobre o colega e escolha **Batalha Naval P2P → Desafiar para Batalha Naval**.
+
+4. **Aceitar a Partida:** O jogador desafiado verá um diálogo de confirmação para aceitar ou recusar o duelo.
+
+5. **Disparos por Turno:**
+
+   * Quem enviou o desafio realiza o primeiro ataque clicando em qualquer célula do tabuleiro **Radar Inimigo (Ataque)**.
+
+   * Os turnos alternam automaticamente após cada disparo.
+
+   * **`X` (Vermelho):** Acerto em embarcação.
+
+   * **`~` (Azul escuro):** Tiro na água.
+
+6. **Fim de Jogo:** Vence quem afundar primeiro todas as 5 embarcações da frota adversária.
+
+## Estrutura do Plugin
+
+```
+plugins/batalhanaval/
+├── build.xml
+├── nbproject/
+│   └── project.properties
+└── src/
+    ├── META-INF/
+    │   └── services/
+    │       └── pitiupi.models.Plugin          # Registro SPI do plugin
+    └── pitiupi/
+        └── batalhanaval/
+            ├── plugin/
+            │   └── BatalhaNavalPlugin.java    # Ciclo de vida, peer actions e recepção de mensagens
+            ├── net/
+            │   └── BatalhaMessage.java        # Modelo serializável do protocolo do jogo
+            └── GUI/
+                └── BatalhaNavalPanel.java     # Interface Swing, tabuleiros 10x10 e log TCP
+
+```
