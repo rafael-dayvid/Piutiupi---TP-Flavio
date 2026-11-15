@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="pitiupi.batalhanaval" default="default" basedir=".">
+    <description>Builds the P2P Battleship plugin for Pitiupi.</description>
+    <import file="nbproject/build-impl.xml"/>
+</project>

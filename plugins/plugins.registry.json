@@ -1,0 +1,36 @@
+{
+  "plugins": [
+    {
+      "id": "chat",
+      "dir": "plugins/chat",
+      "build": "ant",
+      "jar": "dist/pitiupi.chat.jar",
+      "menuCategory": "Social"
+    },
+    {
+      "id": "screencast",
+      "dir": "plugins/screencast",
+      "build": "ant",
+      "jar": "dist/pitiupi.screenCast.jar",
+      "menuCategory": "Streaming"
+    },
+    {
+      "id": "ping",
+      "dir": "plugins/ping",
+      "build": "ant",
+      "jar": "dist/pitiupi.ping.jar",
+      "menuCategory": "Social"
+    },
+    
+    {
+  "id": "batalhanaval",
+  "dir": "plugins/batalhanaval",
+  "build": "ant",
+  "jar": "dist/pitiupi.batalhanaval.jar",
+  "menuCategory": "Jogos"
+  }
+  
+  ]
+}
+
+    

@@ -20,6 +20,13 @@
       "build": "ant",
       "jar": "dist/pitiupi.ping.jar",
       "menuCategory": "Social"
+    },
+    {
+      "id": "batalhanaval",
+      "dir": "plugins/batalhanaval",
+      "build": "ant",
+      "jar": "dist/pitiupi.batalhanaval.jar",
+      "menuCategory": "Jogos"
     }
   ]
 }
